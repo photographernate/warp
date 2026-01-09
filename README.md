@@ -1,6 +1,9 @@
 # WARP
 **Weather Attenuation RF Planner**
 
+<img width="300" height="300" alt="warppatch" src="https://github.com/user-attachments/assets/ea10491a-339d-42cb-9053-0a8e4a8ccf12" />
+
+
 WARP is a small Python project that models RF signal degradation due to weather. The goal is to take real METAR weather data and estimate how much attenuation you might see from rain, atmospheric gases, and humidity across a range of RF frequencies.
 
 This started as a “how bad is this link really going to be today?” tool and turned into a Streamlit app because that was faster than writing a proper UI.

@@ -1,0 +1,1 @@
+python -m streamlit run .\weather_rf_app.py

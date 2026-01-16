@@ -72,6 +72,56 @@ def parse_metar(metar_raw):
         "rain_rate": rain_rate_from_metar(metar_raw),
     }
 
+def decode_metar(obs):
+    """Return a plain-English, engineer-friendly METAR decode."""
+    decoded = {}
+
+    decoded["Station"] = obs.station_id
+    decoded["Observation Time (UTC)"] = obs.time.strftime("%Y-%m-%d %H:%M")
+
+    if obs.temp:
+        decoded["Temperature (°C)"] = float(obs.temp.value())
+    if obs.dewpt:
+        decoded["Dew Point (°C)"] = float(obs.dewpt.value())
+    if obs.temp and obs.dewpt:
+        T = obs.temp.value("C")
+        Td = obs.dewpt.value("C")
+
+        rh = 100 * np.exp((17.625 * Td) / (243.04 + Td)) / \
+                np.exp((17.625 * T)  / (243.04 + T))
+
+        decoded["Relative Humidity (%)"] = round(rh, 1)
+    if obs.wind_speed:
+        decoded["Wind Speed (kt)"] = float(obs.wind_speed.value())
+    if obs.wind_dir:
+        decoded["Wind Direction (deg)"] = int(obs.wind_dir.value())
+
+    if obs.vis:
+        decoded["Visibility (SM)"] = obs.vis.value()
+
+    if obs.press:
+        decoded["Pressure (hPa)"] = round(obs.press.value(), 1)
+
+    # Clouds
+    cloud_desc = []
+    for layer in obs.sky:
+        cover = layer[0]
+        height_ft = layer[1]
+        if height_ft:
+            cloud_desc.append(f"{cover} at {height_ft * 100} ft")
+        else:
+            cloud_desc.append(f"{cover}")
+
+    decoded["Cloud Layers"] = cloud_desc if cloud_desc else ["Clear"]
+
+    # Weather phenomena
+    if obs.weather:
+        decoded["Weather"] = ", ".join(str(w) for w in obs.weather)
+    else:
+        decoded["Weather"] = "None reported"
+
+    return decoded
+
 
 def rain_rate_from_metar(metar):
     if "+RA" in metar:
@@ -180,6 +230,24 @@ else:
 if st.button("Fetch METAR & Compute"):
     metar_raw = fetch_metar(station)
     st.code(metar_raw)
+
+    obs = Metar(metar_raw)
+    decoded = decode_metar(obs)
+
+    st.subheader("Decoded Weather Summary")
+
+    left, right = st.columns(2)
+    items = list(decoded.items())
+
+    half = (len(items) + 1) // 2
+
+    for col, subset in zip([left, right], [items[:half], items[half:]]):
+        with col:
+            for key, value in subset:
+                if isinstance(value, list):
+                    st.markdown(f"**{key}:**<br>" + "<br>".join(value), unsafe_allow_html=True)
+                else:
+                    st.markdown(f"**{key}:** {value}")
 
     wx = parse_metar(metar_raw)
 
